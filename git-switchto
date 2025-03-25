@@ -1,0 +1,42 @@
+#!/bin/bash
+# git-switchto: A custom command that stashes changes before switching branches
+# and restores them when switching back.
+
+# Exit if any command fails
+set -e
+
+if [ "$#" -eq 0 ]; then
+    echo "Usage: git switchto [<git checkout options>] <branch>"
+    exit 1
+fi
+
+target_branch="$1"
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+stash_ref=$(git stash list | grep "branch:$target_branch" | head -n1 | cut -d: -f1)
+
+# If already on the target branch, try to reapply any stash for that branch.
+if [ "$current_branch" == "$target_branch" ]; then
+    echo "Already on branch '$target_branch'."
+    # Check if there is a stash with a message that matches the branch.
+    if [ -n "$stash_ref" ]; then
+        echo "Reapplying stashed changes for '$target_branch'."
+        git stash pop "$stash_ref"
+    fi
+    exit 0
+fi
+
+# If there are changes in the working directory, stash them.
+if ! git diff-index --quiet HEAD --; then
+    echo "Stashing changes on branch '$current_branch'."
+    git stash push ./ --include-untracked -m "branch:$current_branch"
+fi
+
+# Checkout the target branch.
+echo "Executing: git checkout $*"
+git checkout "$@"
+
+# If a stash exists for the target branch, reapply it.
+if [ -n "$stash_ref" ]; then
+    echo "Applying stashed changes for '$target_branch'."
+    git stash pop "$stash_ref"
+fi

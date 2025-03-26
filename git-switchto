@@ -28,7 +28,7 @@ fi
 # If there are changes in the working directory, stash them.
 if ! git diff-index --quiet HEAD --; then
     echo "Stashing changes on branch '$current_branch'."
-    git stash push ./ --include-untracked -m "branch:$current_branch"
+    git stash push ./ --include-untracked -m "wip branch:$current_branch"
 fi
 
 # Checkout the target branch.
